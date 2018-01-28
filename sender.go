@@ -11,37 +11,37 @@ import (
 	"time"
 )
 
-const key = `{"address":"f2851114a967578f9dba4a92a3f7aa09237e4d08","crypto":{"cipher":"aes-128-ctr","ciphertext":"5b2b7158195c753e3f29e4db0474d765499a73855fd5c96bf3a836c97086cff9","cipherparams":{"iv":"5562bdf087417f3c730f58ca0ef11357"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"2f3c0240758dab124b40ec7d1fc42be02e853be655f51aad3b2fc2c6678aed5a"},"mac":"0eb6dc95cc3f92595d88b7cea507929fb576b1c89afe61e9090c4900a6471d69"},"id":"098ebf16-0cd8-4cd6-aab8-1a48eb93168c","version":3}`
+const key = `{"address":"ba47474654eed2ba872678804611bb8cbe22016a","crypto":{"cipher":"aes-128-ctr","ciphertext":"7b6a3452555995ccc04abfea2e7a2bf95acf5098e2328c6a51994a12c617d2c3","cipherparams":{"iv":"9bc61d03b69151139803a727eab692df"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"ec14069205247d65a6b71a4d6dd1a905bbd3eeb6f319dda548214cc5365f780d"},"mac":"b5c43a99dfcab6670e4b4c7d83cd596d803587ebbab422533170e51ec85fa235"},"id":"45262826-d26b-4bd4-9e00-526235a26aa6","version":3}`
 
-var nonce = uint64(5600)
+var url = "https://core.tomocoin.io"
+var client, e = ethclient.Dial(url)
+var d = time.Now().Add(100000 * time.Millisecond)
+var ctx, er = context.WithDeadline(context.Background(), d)
+var unlockedKey, err = keystore.DecryptKey([]byte(key), "")
+var n, errr = client.NonceAt(ctx, unlockedKey.Address, nil)
+var nonce = n - 1
 
-func Sender(url string) {
+//var nonce = uint64(1257)
+
+func Sender(no uint64) {
 	fmt.Println(url)
-	client, err := ethclient.Dial(url)
-	if err != nil {
-		fmt.Println("Failed to connect to the Ethereum client: %v", err)
-	}
-	fmt.Println("OK!!!!!")
-
-	rawTransaction(client)
-	wg.Done()
-}
-
-func rawTransaction(client *ethclient.Client) {
-	d := time.Now().Add(100000 * time.Millisecond)
-	ctx, cancel := context.WithDeadline(context.Background(), d)
-	defer cancel()
-	unlockedKey, err := keystore.DecryptKey([]byte(key), "")
-	nonce = nonce + 1
+	//d := time.Now().Add(10000 * time.Millisecond)
+	//ctx, cancel := context.WithDeadline(context.Background(), d)
+	//defer cancel()
+	//unlockedKey, err := keystore.DecryptKey([]byte(key), "")
+	//nonce, _ := client.NonceAt(ctx, unlockedKey.Address, nil)
+	//nonce = nonce + 1
+	//nonce := uint64(958)
 
 	if err != nil {
 		fmt.Println("Wrong passcode")
 	} else {
-		tx := types.NewTransaction(nonce, common.HexToAddress("0x56724a9e4d2bb2dca01999acade2e88a92b11a9e"), big.NewInt(12400000), 21000, big.NewInt(1000000000), nil)
+		tx := types.NewTransaction(no, common.HexToAddress("0x56724a9e4d2bb2dca01999acade2e88a92b11a9e"), big.NewInt(12400000), 21000, big.NewInt(1000000000), nil)
 		signTx, err := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(40686)), unlockedKey.PrivateKey)
 		fmt.Println(signTx)
 		err = client.SendTransaction(ctx, signTx)
 
-		fmt.Println(err, nonce)
+		fmt.Println(err, no)
 	}
+	wg.Done()
 }

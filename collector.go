@@ -2,9 +2,9 @@ package main
 
 var WorkQueue = make(chan WorkRequest, 100)
 
-func Collector(url string) {
+func Collector(nn uint64) {
 
-	work := WorkRequest{Url: url}
+	work := WorkRequest{Nonce: nn}
 
 	// Push the work onto the queue.
 	WorkQueue <- work

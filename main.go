@@ -23,7 +23,7 @@ func main() {
 	StartDispatcher(*NWorkers)
 
 	for i := 0; i < *NReq; i++ {
-		Collector(*CUrl)
+		Collector(uint64(i) + nonce)
 	}
 
 	wg.Wait()

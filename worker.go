@@ -34,7 +34,7 @@ func (w Worker) Start() {
 
 			select {
 			case work := <-w.Work:
-				Sender(work.Url)
+				Sender(work.Nonce)
 
 			case <-w.QuitChan:
 				// We have been asked to stop.

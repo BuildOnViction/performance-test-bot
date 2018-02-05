@@ -1,1 +1,1 @@
-time ./sender -n 50 -url https://core.tomocoin.io -req 100000
+time ./sender -n 1 -url https://core.tomocoin.io -req 1

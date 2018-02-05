@@ -25,6 +25,13 @@ var nonce uint64
 var unlockedKey *keystore.Key
 
 func main() {
+
+	server := startServer()
+	if err := server.Start(); err != nil {
+		fmt.Println("Could not start server: %v", err)
+	}
+	fmt.Println("Server started", server.NodeInfo().Enode)
+
 	// Parse the command-line flags.
 	flag.Parse()
 	fmt.Println(*CUrl)
@@ -44,4 +51,11 @@ func main() {
 	}
 
 	wg.Wait()
+
+	for {
+		select {
+		case <-time.After(1 * time.Second):
+			fmt.Println(server.PeerCount())
+		}
+	}
 }

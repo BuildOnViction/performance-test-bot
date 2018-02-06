@@ -11,9 +11,11 @@ import (
 )
 
 var (
-	NWorkers = flag.Int("n", 4, "The number of workers to start")
-	CUrl     = flag.String("url", "http://localhost:8545", "That you want to connect")
-	NReq     = flag.Int("req", 1, "The number of transactions")
+	NWorkers  = flag.Int("n", 4, "The number of workers to start")
+	CUrl      = flag.String("url", "http://localhost:8545", "That you want to connect")
+	NReq      = flag.Int("req", 1, "The number of transactions")
+	BootNodes = flag.String("bootnodes", "", "Bootstrap nodes for peer to peer network")
+	Port      = flag.Int("port", 30303, "Node port")
 )
 
 var wg sync.WaitGroup
@@ -25,6 +27,7 @@ var nonce uint64
 var unlockedKey *keystore.Key
 
 func main() {
+	flag.Parse()
 
 	server := startServer()
 	if err := server.Start(); err != nil {
@@ -32,9 +35,6 @@ func main() {
 	}
 	fmt.Println("Server started", server.NodeInfo().Enode)
 
-	// Parse the command-line flags.
-	flag.Parse()
-	fmt.Println(*CUrl)
 	client, _ = ethclient.Dial(*CUrl)
 	d := time.Now().Add(100000 * time.Millisecond)
 	ctx, _ := context.WithDeadline(context.Background(), d)

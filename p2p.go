@@ -7,15 +7,18 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/discover"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const messageId = 0
 
-type Message string
+type Message struct {
+	NReq int
+}
 
-func MyProtocol() p2p.Protocol {
+func BotProtocol() p2p.Protocol {
 	return p2p.Protocol{
-		Name:    "MyProtocol",
+		Name:    "BotProtocol",
 		Version: 1,
 		Length:  1,
 		Run:     msgHandler,
@@ -38,7 +41,7 @@ func startServer() *p2p.Server {
 		MaxPeers:       10,
 		ListenAddr:     ":" + strconv.Itoa(*Port),
 		PrivateKey:     key,
-		Protocols:      []p2p.Protocol{MyProtocol()},
+		Protocols:      []p2p.Protocol{BotProtocol()},
 		BootstrapNodes: peers,
 	}
 	server := &p2p.Server{
@@ -47,25 +50,28 @@ func startServer() *p2p.Server {
 	return server
 }
 
-func msgHandler(peer *p2p.Peer, ws p2p.MsgReadWriter) error {
+func msgHandler(peer *p2p.Peer, rw p2p.MsgReadWriter) error {
 	for {
-		msg, err := ws.ReadMsg() // 3.
-		if err != nil {          // 4.
-			return err // if reading fails return err which will disconnect the peer.
+		select {
+		case <-time.After(1 * time.Second):
+			p2p.SendItems(rw, messageId, &Message{NReq: 1})
+		}
+		msg, err := rw.ReadMsg()
+		if err != nil {
+			return err
 		}
 
-		var myMessage [1]Message
-		err = msg.Decode(&myMessage) // 5.
+		var myMessage Message
+		err = msg.Decode(&myMessage)
 		if err != nil {
-			// handle decode error
 			continue
 		}
 
-		switch myMessage[0] {
-		case "foo":
-			err := p2p.SendItems(ws, messageId, "bar") // 6.
+		switch myMessage.NReq {
+		case 1:
+			err := p2p.SendItems(rw, messageId, &Message{NReq: 2})
 			if err != nil {
-				return err // return (and disconnect) error if writing fails.
+				return err
 			}
 		default:
 			fmt.Println("recv:", myMessage)

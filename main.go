@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"os"
 	"sync"
+	"text/template"
 	"time"
 )
 
@@ -22,6 +24,10 @@ var wg sync.WaitGroup
 
 const key = `{"address":"ba47474654eed2ba872678804611bb8cbe22016a","crypto":{"cipher":"aes-128-ctr","ciphertext":"7b6a3452555995ccc04abfea2e7a2bf95acf5098e2328c6a51994a12c617d2c3","cipherparams":{"iv":"9bc61d03b69151139803a727eab692df"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"ec14069205247d65a6b71a4d6dd1a905bbd3eeb6f319dda548214cc5365f780d"},"mac":"b5c43a99dfcab6670e4b4c7d83cd596d803587ebbab422533170e51ec85fa235"},"id":"45262826-d26b-4bd4-9e00-526235a26aa6","version":3}`
 
+const tmpl = `
+./sender -n 1 -url https://core.tomocoin.io -req 1 -port 30304 -bootnodes enode://{{.ID}}@127.0.0.1:30303
+`
+
 var client *ethclient.Client
 var nonce uint64
 var unlockedKey *keystore.Key
@@ -33,7 +39,15 @@ func main() {
 	if err := server.Start(); err != nil {
 		fmt.Println("Could not start server: %v", err)
 	}
-	fmt.Println("Server started", server.NodeInfo().Enode)
+	t := template.New("Server")
+	t, err := t.Parse(tmpl)
+	if err != nil {
+		fmt.Println("Parse template", err)
+	}
+
+	if err := t.Execute(os.Stdout, server.NodeInfo()); err != nil {
+		fmt.Println("Run template", err)
+	}
 
 	client, _ = ethclient.Dial(*CUrl)
 	d := time.Now().Add(100000 * time.Millisecond)

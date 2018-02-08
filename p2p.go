@@ -13,7 +13,8 @@ import (
 const messageId = 0
 
 type Message struct {
-	NReq int
+	NReq uint64
+	Desc string
 }
 
 func BotProtocol() p2p.Protocol {
@@ -54,22 +55,22 @@ func msgHandler(peer *p2p.Peer, rw p2p.MsgReadWriter) error {
 	for {
 		select {
 		case <-time.After(1 * time.Second):
-			p2p.SendItems(rw, messageId, &Message{NReq: 1})
+			p2p.SendItems(rw, messageId, Message{uint64(1), "test"})
 		}
 		msg, err := rw.ReadMsg()
 		if err != nil {
 			return err
 		}
 
-		var myMessage Message
+		var myMessage [1]Message
 		err = msg.Decode(&myMessage)
 		if err != nil {
 			continue
 		}
 
-		switch myMessage.NReq {
+		switch myMessage[0].NReq {
 		case 1:
-			err := p2p.SendItems(rw, messageId, &Message{NReq: 2})
+			err := p2p.SendItems(rw, messageId, Message{uint64(2), "test"})
 			if err != nil {
 				return err
 			}

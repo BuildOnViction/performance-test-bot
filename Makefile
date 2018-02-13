@@ -1,2 +1,2 @@
 all:
-	go build -o sender *.go
+	go build -o bot *.go

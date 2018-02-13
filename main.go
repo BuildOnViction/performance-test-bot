@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/satori/go.uuid"
+	"io/ioutil"
 	"os"
 	"sync"
 	"text/template"
@@ -18,14 +20,18 @@ var (
 	NReq      = flag.Int("req", 1, "The number of transactions")
 	BootNodes = flag.String("bootnodes", "", "Bootstrap nodes for peer to peer network")
 	Port      = flag.Int("port", 30303, "Node port")
+	Attack    = flag.Int("attack", 0, "Start an attack campaign")
+	KeyFile   = flag.String("key-file", "key.json", "Key file name")
 )
 
 var wg sync.WaitGroup
 
-const key = `{"address":"ba47474654eed2ba872678804611bb8cbe22016a","crypto":{"cipher":"aes-128-ctr","ciphertext":"7b6a3452555995ccc04abfea2e7a2bf95acf5098e2328c6a51994a12c617d2c3","cipherparams":{"iv":"9bc61d03b69151139803a727eab692df"},"kdf":"scrypt","kdfparams":{"dklen":32,"n":262144,"p":1,"r":8,"salt":"ec14069205247d65a6b71a4d6dd1a905bbd3eeb6f319dda548214cc5365f780d"},"mac":"b5c43a99dfcab6670e4b4c7d83cd596d803587ebbab422533170e51ec85fa235"},"id":"45262826-d26b-4bd4-9e00-526235a26aa6","version":3}`
+var key string
+
+var NodeId string
 
 const tmpl = `
-./sender -n 1 -url https://core.tomocoin.io -req 1 -port 30304 -bootnodes enode://{{.ID}}@127.0.0.1:30303
+./bot -n 1 -url https://core.tomocoin.io -req 1 -port 30304 -bootnodes enode://{{.ID}}@127.0.0.1:30303 -key-file key1.json
 `
 
 var client *ethclient.Client
@@ -33,14 +39,26 @@ var nonce uint64
 var unlockedKey *keystore.Key
 
 func main() {
+	uid := uuid.Must(uuid.NewV4())
+	NodeId = uid.String()
+	fmt.Println("NodeId", NodeId)
+
+	// get key file
+	k, err := ioutil.ReadFile(*KeyFile)
+	if err != nil {
+		fmt.Println(err)
+	}
+	key := string(k)
+	fmt.Println(key)
+
 	flag.Parse()
 
 	server := startServer()
-	if err := server.Start(); err != nil {
+	if err = server.Start(); err != nil {
 		fmt.Println("Could not start server: %v", err)
 	}
 	t := template.New("Server")
-	t, err := t.Parse(tmpl)
+	t, err = t.Parse(tmpl)
 	if err != nil {
 		fmt.Println("Parse template", err)
 	}
@@ -55,16 +73,9 @@ func main() {
 	unlockedKey, _ = keystore.DecryptKey([]byte(key), "")
 	nonce, _ = client.NonceAt(ctx, unlockedKey.Address, nil)
 
-	wg.Add(*NReq)
-
-	// Start the dispatcher.
-	StartDispatcher(*NWorkers)
-
-	for i := 0; i < *NReq; i++ {
-		Collector(uint64(i) + nonce)
+	if *Attack == 1 {
+		attack(*NReq, *NWorkers)
 	}
-
-	wg.Wait()
 
 	for {
 		select {
@@ -72,4 +83,18 @@ func main() {
 			fmt.Println(server.PeerCount())
 		}
 	}
+}
+
+func attack(nReq int, nWorkers int) {
+	wg.Add(nReq)
+
+	// Start the dispatcher.
+	StartDispatcher(nWorkers)
+
+	for i := 0; i < nReq; i++ {
+		Collector(uint64(i) + nonce)
+	}
+
+	wg.Wait()
+
 }

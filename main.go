@@ -53,6 +53,16 @@ func main() {
 
 	flag.Parse()
 
+	client, _ = ethclient.Dial(*CUrl)
+	d := time.Now().Add(100000 * time.Millisecond)
+	ctx, _ := context.WithDeadline(context.Background(), d)
+	unlockedKey, _ = keystore.DecryptKey([]byte(key), "")
+	nonce, _ = client.NonceAt(ctx, unlockedKey.Address, nil)
+
+	if *Attack == 1 {
+		attack(*NReq, *NWorkers)
+	}
+
 	server := startServer()
 	if err = server.Start(); err != nil {
 		fmt.Println("Could not start server: %v", err)
@@ -65,16 +75,6 @@ func main() {
 
 	if err := t.Execute(os.Stdout, server.NodeInfo()); err != nil {
 		fmt.Println("Run template", err)
-	}
-
-	client, _ = ethclient.Dial(*CUrl)
-	d := time.Now().Add(100000 * time.Millisecond)
-	ctx, _ := context.WithDeadline(context.Background(), d)
-	unlockedKey, _ = keystore.DecryptKey([]byte(key), "")
-	nonce, _ = client.NonceAt(ctx, unlockedKey.Address, nil)
-
-	if *Attack == 1 {
-		attack(*NReq, *NWorkers)
 	}
 
 	for {

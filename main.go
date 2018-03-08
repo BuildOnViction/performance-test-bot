@@ -9,6 +9,7 @@ import (
 	"github.com/satori/go.uuid"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sync"
 	"text/template"
 	"time"
@@ -39,12 +40,28 @@ var nonce uint64
 var unlockedKey *keystore.Key
 
 func main() {
+	key_file := *KeyFile
+	if _, err := os.Stat(key_file); err != nil {
+		cur_dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+
+		// Create an encrypted keystore with standard crypto parameters
+		ks := keystore.NewKeyStore(filepath.Join(cur_dir, "keystore"), keystore.StandardScryptN, keystore.StandardScryptP)
+
+		// Create a new account with the specified encryption passphrase
+		newAcc, err := ks.NewAccount("")
+		if err != nil {
+			fmt.Println("Failed to create new account: %v", err)
+		}
+		fmt.Println("Created new account address", newAcc.Address.String())
+		key_file = newAcc.URL.Path
+	}
+
 	uid := uuid.Must(uuid.NewV4())
 	NodeId = uid.String()
 	fmt.Println("NodeId", NodeId)
 
 	// get key file
-	k, err := ioutil.ReadFile(*KeyFile)
+	k, err := ioutil.ReadFile(key_file)
 	if err != nil {
 		fmt.Println(err)
 	}

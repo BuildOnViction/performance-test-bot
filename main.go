@@ -95,10 +95,6 @@ func main() {
 	}
 
 	for {
-		select {
-		case <-time.After(1 * time.Second):
-			fmt.Println(server.PeerCount())
-		}
 	}
 }
 

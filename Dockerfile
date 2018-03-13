@@ -7,6 +7,7 @@ RUN \
 
 COPY ./ /build/
 
+RUN go get -d -v ./...
 RUN make
 
 CMD ["bash", "test.sh"]

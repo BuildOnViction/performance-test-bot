@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/p2p"
 	"github.com/ethereum/go-ethereum/p2p/discover"
 	"strconv"
@@ -28,7 +27,7 @@ func BotProtocol() p2p.Protocol {
 }
 
 func startServer() *p2p.Server {
-	key, _ := crypto.GenerateKey()
+	key := unlockedKey.PrivateKey
 	bootNodes := strings.Split(*BootNodes, ",")
 
 	var peers []*discover.Node
